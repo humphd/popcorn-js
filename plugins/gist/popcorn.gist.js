@@ -35,33 +35,101 @@
    *     });
    */
 
-  function unhighlight() {
-    console.log('unhighlight');
+   /**
+    * script.js - https://github.com/kares/script.js
+    *
+    * http://www.apache.org/licenses/LICENSE-2.0.html
+    * @version 0.7-SNAPSHOT
+    */
+var script=function(){function n(e,b){var d=e.loaded,a=e.complete;if(e.defer){var c=document.createElement("script");c.src=e.src;if(e.type)c.type=e.type;e.charset&&c.setAttribute("charset",e.charset);var g=function(){if(!(d&&d.call(c,e.writes?h||void 0:void 0)===!1)){var b=document.getElementById(e.id);if(e.writes&&h){var g=function(a){c.nextSibling?c.parentNode.insertBefore(a,c.nextSibling):c.parentNode.appendChild(a)};b||(b=document.createElement("div"),g(b));b.style.display="none";b.innerHTML=
+"<br/>"+h.join("");b.removeChild(b.childNodes[0]);for(var f=b.childNodes[0];f;)b.removeChild(f),g(f),f=b.childNodes[0]}b&&b.parentNode.removeChild(b);a&&a.call(c)}},f=!1;c.onload=c.onreadystatechange=function(){if(!f&&(!this.readyState||this.readyState==="loaded"||this.readyState==="complete")){f=!0;c.onload=c.onreadystatechange=null;try{g()}finally{b&&b()}}};e.append(c)}else{c=document.getElementById(e.id);try{var i;d&&(i=d.call(c));i!==!1&&a&&a.call(c)}finally{if(e.idGenerated)c.id=null;b&&b()}}}
+function i(){if(f&&!f.loading)f.loading=!0,function b(){if(f.length){var d=f.shift();if(d)if(d.writes){if(!j)j=document.write;if(!k)k=document.writeln;document.write=o;document.writeln=p;h=null;n(d,function(){if(j)document.write=j;if(k)document.writeln=k;h=k=j=null;b()})}else n(d),b();else b()}else delete f.loading}()}var h=null,o=function(){var e=arguments;e&&e[0]&&(h||(h=[]),h.push(e[0]))},p=function(e){o(e+"\n")},j,k,f=[],g,l=function(){g&&(g=null,i())};if(document.addEventListener)g=function(){document.removeEventListener("DOMContentLoaded",
+g,!1);g=null;i()},document.addEventListener("DOMContentLoaded",g,!1),window.addEventListener("load",l,!1);else if(document.attachEvent){g=function(){document.readyState==="complete"&&(document.detachEvent("onreadystatechange",g),g=null,i())};document.attachEvent("onreadystatechange",g);window.attachEvent("onload",l);l=!1;try{l=window.frameElement==null}catch(r){}document.documentElement.doScroll&&l&&function b(){if(g){try{document.documentElement.doScroll("left")}catch(d){setTimeout(b,1);return}i()}}()}var m=
+function(b){if(!b)throw"script : no arguments given";if(typeof b==="string")b={src:b};else if(!b.src)throw"script : 'src' is required";var d,a={},c=m.defaults;if(c)for(d in c)a[d]=c[d];for(d in b)a[d]=b[d];if(a.base&&a.src.substring(0,4)!=="http")d=a.base,c=a.base.length-1,d=d[c]=="/"?d.substring(0,c):d,a.src=d+"/"+a.src;if(a.onload!=null)a.onLoad=a.onLoad!=null?b.onload!=null?b.onload:b.onLoad!=null?b.onLoad:a.onload:a.onload,delete a.onload;if(typeof a.defer==="undefined")a.defer=a.onLoad;if(!a.id)a.id=
+m._generateId(),a.idGenerated=!0;var h=a.append;if(typeof h==="string")a.append=function(a){document.getElementById(h).appendChild(a)};else if(h&&h.appendChild)a.append=function(a){h.appendChild(a)};if(a.writes==null)a.writes=!0;if(g){if(a.defer){if(b='<div id="'+a.id+'"',b+=a.loadingHTML?">"+a.loadingHTML:' style="diplay: none;">',b+="</div>",!a.append)a.append=function(b){var c=document.getElementById(a.id);c.parentNode.insertBefore(b,c)}}else b='<script id="'+a.id+'" src="'+a.src+'"><\/script>';
+document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;if(!a.append)a.append=function(a){document.getElementsByTagName("body")[0].appendChild(a)};a.order==null?f.push(a):f.splice(a.order,0,a);i()}},q=0;m._generateId=function(){return"_script-"+q++};m.defaults={type:"text/javascript"};return m}();
+
+  /**
+   * Inject CSS class into DOM, from http://paulirish.com/2008/bookmarklet-inject-new-css-rules/
+   */
+  var gistCssClassName;
+  function setupCss(className) {
+    if (className) {
+      gistCssClassName = className;
+      return;
+    }
+
+    gistCssClassName = "popcorn-gist-highlighted";
+    var defaultHighlightedCSS = ".popcorn-gist-highlighted { background-color: #FFC; }";
+
+    if ("\v" == "v") {
+      document.createStyleSheet().cssText = defaultHighlightedCSS;
+    } else {
+      var tag = document.createElement("style");
+      tag.type = "text/css";
+      document.getElementsByTagName("head")[0].appendChild(tag);
+      tag[(typeof document.body.style.WebkitAppearance == "string") ? "innerText" : "innerHTML"] = defaultHighlightedCSS;
+    }
+  }
+
+  function applyStyle(linesString, func) {
+    var lines = [];
+    Popcorn.forEach( linesString.split(','), function ( item, i ) {
+      var range = item.split('-');
+      if (range.length === 1) {
+        lines.push(parseInt(range[0], 10));
+      } else {
+        for (var i = parseInt(range[0],10); i < parseInt(range[1],10)+1; i++) {
+          lines.push(i);
+        }
+      }
+    } );
+
+    var i = lines.length;
+    while (i--) {
+      func(lines[i]);
+    }
+  }
+
+  var highlighted = {};
+
+  function getLine(num) {
+    return document.getElementById('LC' + num);
+  }
+
+  function unhighlight(line) {
+    line = getLine(line);
+    if (!line) {
+      console.log('whoops!');
+      return;
+    }
+
+    line.classList.remove('popcorn-gist-highlighted');
   }
 
   function highlight(line) {
-    console.log('highlight');
+    line = getLine(line);
+    if (!line) {
+      console.log('whoops!');
+      return;
+    }
+
+    line.classList.add('popcorn-gist-highlighted');
   }
 
   function scrollTo(line) {
-
+    // todo...
   }
 
   var gists = {};
 
   function loadGist(url, target) {
-    var container = document.getElementById(target);
-    var script = document.createElement('script');
-    container.appendChild(script);
-
     var gistId = url.match(/gist\.github\.com\/(\d+)/)[1];
-    script.src = 'https://gist.github.com/' + gistId + '.js';
-
-    gists[url] = script;
-
-
-
-
+    script({
+      src: 'https://gist.github.com/' + gistId + '.js',
+      append: target
+    });
+    gists[url] = true;
   }
 
   Popcorn.plugin( "gist" , {
@@ -82,46 +150,26 @@
       }
     },
     _setup: function(options) {
-    },
-    /**
-     * @member footnote 
-     * The start function will be executed when the currentTime 
-     * of the video  reaches the start time provided by the 
-     * options variable
-     */
-    start: function(event, options) {
-      if (!gists[options.gistUrl]) {
-        loadGist(options.gistUrl, options.target);
+      if (!gistCssClassName) {
+        setupCss(options.className);
       }
 
+      if (!gists[options.gistUrl]) {
+        console.log('loading...');
+        loadGist(options.gistUrl, options.target);
+      }
+    },
+    start: function(event, options) {
       if (!options.lines) {
         unhighlight();
       } else {
-        var lines = [];
-        Popcorn.forEach( options.lines.split(','), function ( item, i ) {
-          var range = item.split('-');
-          if (range.length === 1) {
-            lines.push(parseInt(range[0], 10));
-          } else {
-            for (var i = parseInt(range[0],10); i < parseInt(range[1],10)+1; i++) {
-              lines.push(i);
-            }
-          }
-        } );
-        console.log(options.start, lines);
+        applyStyle(options.lines, highlight);
       }
     },
-    /**
-     * @member footnote 
-     * The end function will be executed when the currentTime 
-     * of the video  reaches the end time provided by the 
-     * options variable
-     */
     end: function(event, options){
-      unhighlight();
+      applyStyle(options.lines, unhighlight);
     },
     _teardown: function( options ) {
-
     }
   });
 

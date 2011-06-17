@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Popcorn footnote Plug-in Demo</title>
-  
+  <title>Popcorn gist Plug-in Demo</title>
+
   <script src="../../popcorn.js"></script>
   <script src="popcorn.gist.js"></script>
   <script>
@@ -14,14 +14,14 @@
         end: 10, // seconds
         lines: '3,5',
         gistUrl: 'https://gist.github.com/1029514.js',
-        target: 'footnotediv'
+        target: 'gistdiv'
       } )
       .gist({
         start: 11, // seconds
         end: 15, // seconds
         lines: '1-16,3,5-27',
         gistUrl: 'https://gist.github.com/1029514.js',
-        target: 'footnotediv'
+        target: 'gistdiv'
       } )
 
     }, false);
@@ -50,7 +50,7 @@
 
     </video> 
   </div>
-  <div id="footnotediv" width="50%" height="50%">
+  <div id="gistdiv" width="50%" height="50%">
   </div>
 </body>
 </html>
