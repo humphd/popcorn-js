@@ -42,8 +42,6 @@
    *     });
    */
 
-   var ERR_MSG = "popcorndoc: runIn property must be a vaild ID of a DIV in the document. Was '";
-
    /**
     * script.js - https://github.com/kares/script.js
     *
@@ -140,6 +138,17 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
   }
 
   var iframe;
+  function cleanUp(elem) {
+    var container = elem.parentNode;
+    if (!container) {
+      throw new Error(ERR_MSG);
+    }
+    container.removeChild(iframe);
+    iframe = null;
+    console.log('cleanup');
+  }
+
+  var ERR_MSG = "popcorndoc: runIn property must be a vaild ID of a DIV in the document.";
 
   Popcorn.plugin( "popcorndoc" , {
 
@@ -174,6 +183,10 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
 
         if (options.runIn) {
 
+          if (iframe) {
+            cleanUp(iframe);
+          }
+
           iframe = document.createElement( "iframe" );
 
           var contents = document.querySelectorAll( "div.line" ),
@@ -181,7 +194,7 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
             container = document.getElementById(options.runIn);
 
           if (!container) {
-            throw new Error(ERR_MSG + options.runIn + "'");
+            throw new Error(ERR_MSG);
           }
 
           container.style.display = 'block';
@@ -209,14 +222,8 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
       }
     },
     end: function( event, options ){
-      applyStyle( options.lines, unhighlight );
-      if (options.runIn) {
-        var container = document.getElementById(options.runIn);
-        if (!container) {
-          throw new Error(ERR_MSG + options.runIn + "'");
-        }
-        container.removeChild(iframe);
-        iframe = null;
+      if (options.lines) {
+        applyStyle( options.lines, unhighlight );
       }
     }
   });
