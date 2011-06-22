@@ -4,7 +4,7 @@
 
   /**
    * Github Gist popcorn plug-in
-   * Loads and allows lines of code in a gist to be highlighted.
+   * Loads and allows lines of code in a gist to be highlighted, and examples run.
    *
    * @param {Object} options
    *
@@ -33,7 +33,15 @@
    *       target: 'gist-container', // DIV in which to load gist
    *       gistUrl: 'https://gist.github.com/289467' // URL of gist
    *     });
+   *     // Run the example.  NOTE: should be last gist track.
+   *     .popcorndoc({
+   *       start: 29, // seconds
+   *       target: 'gist-container', // DIV in which to load gist
+   *       gistUrl: 'https://gist.github.com/289467' // URL of gist
+   *       runIn: 'iframe-container-div' // DIV in which to load the example in an iframe
+   *     });
    */
+
 
    /**
     * script.js - https://github.com/kares/script.js
@@ -48,33 +56,6 @@ g,!1);g=null;i()},document.addEventListener("DOMContentLoaded",g,!1),window.addE
 function(b){if(!b)throw"script : no arguments given";if(typeof b==="string")b={src:b};else if(!b.src)throw"script : 'src' is required";var d,a={},c=m.defaults;if(c)for(d in c)a[d]=c[d];for(d in b)a[d]=b[d];if(a.base&&a.src.substring(0,4)!=="http")d=a.base,c=a.base.length-1,d=d[c]=="/"?d.substring(0,c):d,a.src=d+"/"+a.src;if(a.onload!=null)a.onLoad=a.onLoad!=null?b.onload!=null?b.onload:b.onLoad!=null?b.onLoad:a.onload:a.onload,delete a.onload;if(typeof a.defer==="undefined")a.defer=a.onLoad;if(!a.id)a.id=
 m._generateId(),a.idGenerated=!0;var h=a.append;if(typeof h==="string")a.append=function(a){document.getElementById(h).appendChild(a)};else if(h&&h.appendChild)a.append=function(a){h.appendChild(a)};if(a.writes==null)a.writes=!0;if(g){if(a.defer){if(b='<div id="'+a.id+'"',b+=a.loadingHTML?">"+a.loadingHTML:' style="diplay: none;">',b+="</div>",!a.append)a.append=function(b){var c=document.getElementById(a.id);c.parentNode.insertBefore(b,c)}}else b='<script id="'+a.id+'" src="'+a.src+'"><\/script>';
 document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;if(!a.append)a.append=function(a){document.getElementsByTagName("body")[0].appendChild(a)};a.order==null?f.push(a):f.splice(a.order,0,a);i()}},q=0;m._generateId=function(){return"_script-"+q++};m.defaults={type:"text/javascript"};return m}();
-
-  /*!
-   * getText lifted from Sizzle.getText
-   * Sizzle CSS Selector Engine
-   * Copyright 2011, The Dojo Foundation
-   * Released under the MIT, BSD, and GPL Licenses.
-   * More information: http://sizzlejs.com/
-   */
-  function getText( nodeList ) {
-    var ret = "",
-      elem;
-
-    for ( var i = 0; nodeList[i]; i++ ) {
-      elem = nodeList[i];
-
-      // Get the text from text nodes and CDATA nodes
-      if ( elem.nodeType === 3 || elem.nodeType === 4 ) {
-        ret += elem.nodeValue;
-
-      // Traverse everything else, except comment nodes
-      } else if ( elem.nodeType !== 8 ) {
-        ret += getText( elem.childNodes );
-      }
-    }
-
-    return ret;
-  };
 
   /**
    * Inject CSS class into DOM, from http://paulirish.com/2008/bookmarklet-inject-new-css-rules/
@@ -106,8 +87,8 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
       if (range.length === 1) {
         lines.push(parseInt(range[0], 10));
       } else {
-        for (var i = parseInt(range[0],10); i < parseInt(range[1],10)+1; i++) {
-          lines.push(i);
+        for (var j = parseInt(range[0],10); i < parseInt(range[1],10)+1; j++) {
+          lines.push(j);
         }
       }
     } );
@@ -127,7 +108,6 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
   function unhighlight(line) {
     line = getLine(line);
     if (!line) {
-      console.log('whoops!');
       return;
     }
 
@@ -137,7 +117,6 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
   function highlight(line) {
     line = getLine(line);
     if (!line) {
-      console.log('whoops!');
       return;
     }
 
@@ -172,8 +151,9 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
         start    : {elem:'input', type:'text', label:'In'},
         end      : {elem:'input', type:'text', label:'Out'},
         target   : 'gist-container',
-        line     : {elem:'input', type:'text', label:'Line'},
-        gistUrl  : {elem:'input', type:'text', label:'Gist URL'}
+        lines    : {elem:'input', type:'text', label:'Line'},
+        gistUrl  : {elem:'input', type:'text', label:'Gist URL'},
+        runIn    : {elem:'input', type:'text', label:'Div to Run Example in'}
       }
     },
     _setup: function(options) {
@@ -182,7 +162,6 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
       }
 
       if (!gists[options.gistUrl]) {
-        console.log('loading...');
         loadGist(options.gistUrl, options.target);
       }
     },
@@ -192,7 +171,7 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
 
         if (options.runIn) {
 
-          var contents = getText( document.querySelectorAll(".gist-syntax") ),
+          var contents = document.querySelectorAll( "div.line" ),
             iframe = document.createElement( "iframe" ),
             iframeDoc,
             container = document.getElementById(options.runIn);
@@ -201,29 +180,32 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
             return;
           }
 
-          container.appendChild( iframe );
+          container.style.display = 'block';
 
-          // TODO: origin error
-          Popcorn.xhr({ url: "https://raw.github.com/gist/1032479/f3d2d30c0fa800c5596e066be1b62a46fbac7ced/gistfile1.js",
-                         success: function( data ) {
-                           var text = data.text;
-                           console.log(data.text);
-                           text = text.replace('<head>',
-                             '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">');
-                           iframeDoc = ( iframe.contentWindow || iframe.contentDocument ).document;
-                           iframeDoc.write( text );
-                           iframeDoc.close();
-                         }
-                      });
+          iframe.setAttribute( 'width', '100%' );
+          iframe.setAttribute( 'height', '100%' );
+
+          container.appendChild( iframe );
+          iframeDoc = ( iframe.contentWindow || iframe.contentDocument ).document;
+          iframeDoc.open();
+
+          Popcorn.forEach( contents, function( div ) {
+            var text = div.textContent;
+            if ( text ) {
+              // Remove single-line comments, being careful not to ditch URLs (http://....)
+              text = text.replace( /[^:]\/\/.+$/, '' );
+              iframeDoc.write( text + '\n' );
+            }
+          } );
+
+          iframeDoc.close();
         }
       } else {
-        applyStyle(options.lines, highlight);
+        applyStyle( options.lines, highlight );
       }
     },
-    end: function(event, options){
-      applyStyle(options.lines, unhighlight);
-    },
-    _teardown: function( options ) {
+    end: function( event, options ){
+      applyStyle( options.lines, unhighlight );
     }
   });
 
