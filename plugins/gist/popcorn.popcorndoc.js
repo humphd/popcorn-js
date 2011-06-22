@@ -37,11 +37,12 @@
    *     .popcorndoc({
    *       start: 29, // seconds
    *       target: 'gist-container', // DIV in which to load gist
-   *       gistUrl: 'https://gist.github.com/289467' // URL of gist
+   *       gistUrl: 'https://gist.github.com/289467', // URL of gist
    *       runIn: 'iframe-container-div' // DIV in which to load the example in an iframe
    *     });
    */
 
+   var ERR_MSG = "popcorndoc: runIn property must be a vaild ID of a DIV in the document. Was '";
 
    /**
     * script.js - https://github.com/kares/script.js
@@ -138,6 +139,8 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
     gists[url] = true;
   }
 
+  var iframe;
+
   Popcorn.plugin( "popcorndoc" , {
 
     manifest: {
@@ -171,13 +174,14 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
 
         if (options.runIn) {
 
+          iframe = document.createElement( "iframe" ),
+
           var contents = document.querySelectorAll( "div.line" ),
-            iframe = document.createElement( "iframe" ),
             iframeDoc,
             container = document.getElementById(options.runIn);
 
           if (!container) {
-            return;
+            throw new Error(ERR_MSG + options.runIn + "'");
           }
 
           container.style.display = 'block';
@@ -206,6 +210,14 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
     },
     end: function( event, options ){
       applyStyle( options.lines, unhighlight );
+      if (options.runIn) {
+        var container = document.getElementById(options.runIn);
+        if (!container) {
+          throw new Error(ERR_MSG + options.runIn + "'");
+        }
+        container.removeChild(iframe);
+        iframe = null;
+      }
     }
   });
 
