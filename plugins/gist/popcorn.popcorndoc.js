@@ -174,7 +174,7 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
 
         if (options.runIn) {
 
-          iframe = document.createElement( "iframe" ),
+          iframe = document.createElement( "iframe" );
 
           var contents = document.querySelectorAll( "div.line" ),
             iframeDoc,
