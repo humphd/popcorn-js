@@ -13,24 +13,34 @@
   <script src="../../popcorn.js"></script>
   <script src="popcorn.popcorndoc.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    Popcorn(function() {
       var p = Popcorn('#video')
       .popcorndoc( {
         start: 1,
-        end: 2,
-        lines: '3,5',
+        end: 3,
+        lines: '3',
         gistUrl: 'https://gist.github.com/1040157',
         target: 'gistdiv'
       } )
+
       .popcorndoc( {
-        start: 3,
+        start: 4,
+        end: 6,
+        lines: '4-5,7',
+        gistUrl: 'https://gist.github.com/1040157',
+        target: 'gistdiv'
+      } )
+
+      .popcorndoc( {
+        start: 7,
+        end: 15,
         gistUrl: 'https://gist.github.com/1040157',
         target: 'gistdiv',
         runIn: 'iframe'
       } )
       .play();
 
-    }, false);
+    });
   </script>
 </head>
 <body>

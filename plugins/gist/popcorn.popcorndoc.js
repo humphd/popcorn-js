@@ -81,20 +81,26 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
 
   function applyStyle(linesString, func) {
     var lines = [];
-    Popcorn.forEach( linesString.split(','), function ( item, i ) {
-      var range = item.split('-');
-      if (range.length === 1) {
-        lines.push(parseInt(range[0], 10));
-      } else {
-        for (var j = parseInt(range[0],10); i < parseInt(range[1],10)+1; j++) {
-          lines.push(j);
+    Popcorn.forEach( linesString.split( ',' ), function ( item, i ) {
+      var range = item.split('-'),
+        lineStart = range[0] | 0,
+        lineEnd = range[1] | 0;
+
+      if (lineEnd) {
+        // Make sure the line range is valid
+        lineEnd = lineEnd > lineStart ? lineEnd : lineStart + 1;
+
+        while (lineStart < lineEnd ) {
+          lines.push( lineStart++ );
         }
+      } else {
+        lines.push( lineStart );
       }
     } );
 
     var i = lines.length;
-    while (i--) {
-      func(lines[i]);
+    while ( i-- ) {
+      func( lines[i] );
     }
   }
 
@@ -145,7 +151,6 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
     }
     container.removeChild(iframe);
     iframe = null;
-    console.log('cleanup');
   }
 
   var ERR_MSG = "popcorndoc: runIn property must be a vaild ID of a DIV in the document.";
@@ -168,6 +173,7 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
         runIn    : {elem:'input', type:'text', label:'Div to Run Example in'}
       }
     },
+
     _setup: function(options) {
       if (!gistCssClassName) {
         setupCss(options.className);
@@ -177,53 +183,63 @@ document.write(b);a.order==null?f.push(a):f.splice(a.order,0,a)}else{a.defer=!0;
         loadGist(options.gistUrl, options.target);
       }
     },
+
     start: function(event, options) {
-      if (!options.lines) {
-        unhighlight();
-
-        if (options.runIn) {
-
-          if (iframe) {
-            cleanUp(iframe);
-          }
-
-          iframe = document.createElement( "iframe" );
-
-          var contents = document.querySelectorAll( "div.line" ),
-            iframeDoc,
-            container = document.getElementById(options.runIn);
-
-          if (!container) {
-            throw new Error(ERR_MSG);
-          }
-
-          container.style.display = 'block';
-
-          iframe.setAttribute( 'width', '100%' );
-          iframe.setAttribute( 'height', '100%' );
-
-          container.appendChild( iframe );
-          iframeDoc = ( iframe.contentWindow || iframe.contentDocument ).document;
-          iframeDoc.open();
-
-          Popcorn.forEach( contents, function( div ) {
-            var text = div.textContent;
-            if ( text ) {
-              // Remove single-line comments, being careful not to ditch URLs (http://....)
-              text = text.replace( /[^:]\/\/.+$/, '' );
-              iframeDoc.write( text + '\n' );
-            }
-          } );
-
-          iframeDoc.close();
-        }
-      } else {
+      if (options.lines) {
         applyStyle( options.lines, highlight );
+        return;
+      }
+
+      unhighlight();
+
+      if (options.runIn) {
+        console.log('runIn start');
+        if (iframe) {
+          cleanUp(iframe);
+        }
+
+        iframe = document.createElement( "iframe" );
+
+        var contents = document.querySelectorAll( "div.line" ),
+          container = document.getElementById(options.runIn),
+          iframeDoc;
+
+        if (!container) {
+          throw new Error(ERR_MSG);
+        }
+
+        container.style.display = 'block';
+
+        iframe.setAttribute( 'width', '100%' );
+        iframe.setAttribute( 'height', '100%' );
+
+        container.appendChild( iframe );
+        iframeDoc = ( iframe.contentWindow || iframe.contentDocument ).document;
+        iframeDoc.open();
+
+        Popcorn.forEach( contents, function( div ) {
+          var text = div.textContent;
+          if ( text ) {
+            // Remove single-line comments, being careful not to ditch URLs (http://....)
+            text = text.replace( /[^:]\/\/.+$/, '' );
+            iframeDoc.write( text + '\n' );
+          }
+        } );
+
+        iframeDoc.close();
       }
     },
+
     end: function( event, options ){
       if (options.lines) {
         applyStyle( options.lines, unhighlight );
+      }
+
+      if (options.runIn) {
+        console.log('runIn end');
+        if (iframe) {
+          cleanUp(iframe);
+        }
       }
     }
   });
