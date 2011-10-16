@@ -3,62 +3,77 @@
 (function (Popcorn, document) {
 
   /**
-   * Github Gist popcorn plug-in
-   * Loads and allows lines of code in a gist to be highlighted.
+   * PDF popcorn plug-in
+   * Loads and allows pages of a PDF file to be shown in a DIV.
    *
    * @param {Object} options
    *
    * Example:
    *  var p = Popcorn('#video')
-   *     .gist({
+   *     // Let the pdf plugin load your PDF file for you using pdfUrl.
+   *     .pdf({
    *       start: 5, // seconds
    *       end: 15, // seconds
-   *       lines: '25', // line(s) to highlight and show
-   *       target: 'gist-container', // DIV in which to load gist
-   *       gistUrl: 'https://gist.github.com/289467' // URL of gist
+   *       pdfUrl: 'url-of-pdf-file', // the PDF file to use (will be loaded)
+   *       pdfPage: 6, // show page 6 of this PDF
+   *       target: 'pdf-container', // DIV in which to load gist
    *     })
-   *     // The specified "line" can also be a list
-   *     .gist({
-   *       start: 20, // seconds
-   *       end: 25, // seconds
-   *       lines: '26,29-32', // line(s) to highlight and show
-   *       target: 'gist-container', // DIV in which to load gist
-   *       gistUrl: 'https://gist.github.com/289467' // URL of gist
+   *     // Manage loading the PDF file yourself using pdfDoc.
+   *     .pdf({
+   *       start: 16, // seconds
+   *       end: 20, // seconds
+   *       pdfDoc: myPreviouslyLoadedPDFDoc, // PDFDoc object already created
+   *       pdfPage: 7, // show page 6 of this PDF
+   *       target: 'pdf-container', // DIV in which to load gist
    *     })
-   *     // Highlighting can be removed
-   *     .gist({
-   *       start: 20, // seconds
+   *     // Set your own width and height for the rendered page.
+   *     .pdf({
+   *       start: 21, // seconds
    *       end: 25, // seconds
-   *       lines: null // line(s) to highlight and show
-   *       target: 'gist-container', // DIV in which to load gist
-   *       gistUrl: 'https://gist.github.com/289467' // URL of gist
+   *       pdfDoc: myPreviouslyLoadedPDFDoc, // PDFDoc object already created
+   *       pdfPage: 8, // show page 6 of this PDF
+   *       width: 1024, // custom width to use instead of PDF's natural width
+   *       height: 1024, // custom height to use instead of PDF's natural height
+   *       target: 'pdf-container', // DIV in which to load gist
    *     });
    */
 
 
   /**
-   * Cached PDFDoc objects
+   * Cached PDFDoc objects.
    */
-  var docCache;
+  var _docCache;
 
-  function loadPdf(url, callback) {
+  /**
+   * Helper function to load and cache a PDF document with callbacks
+   */
+  function loadPdf(url, callback, errback) {
+    callback = callback || function() {};
+    errback = errback || function() {};
+
     getPdf(
       {
         url: url,
         error: function() {
           // TODO: need to log this somewhere...
           console.log('unable to load doc `' + url + '`');
+          errback();
         }
       },
       function(data) {
-        console.log(url,data);
         var pdf = new PDFDoc(data);
-        docCache[url] = pdf;
+        _docCache[url] = pdf;
+
         callback(pdf);
       }
     );
   }
 
+  /**
+   * Renders a single page of a PDF document.  Defaults to using the
+   * natural dimensions of the page, unless alternate width/height
+   * are given.
+   */
   function renderPage(options) {
     var canvas = options.canvas,
       ctx = canvas.getContext('2d'),
@@ -79,6 +94,7 @@
     page.startRendering(ctx, callback);
   }
 
+
   Popcorn.plugin( "pdf" , {
 
     manifest: {
@@ -94,60 +110,56 @@
         target     : 'pdf-container',
         width      : {elem:'input', type:'text', label:'Width'},
         height     : {elem:'input', type:'text', label:'Height'},
-        pdfUrl     : {elem:'input', type:'text', label:'Line'},
-        pageNumber : {elem:'input', type:'text', label:'Gist URL'}
+        pdfUrl     : {elem:'input', type:'text', label:'PDF URL'},
+        // TODO: Not sure how to deal with pdfDoc, which can only be done with script
+        // pdfDoc     : ???
+        pageNumber : {elem:'input', type:'text', label:'Page Number'}
       }
     },
 
+
     _setup: function(options) {
-      docCache = {};
+      _docCache = {};
     },
 
+
     /**
-     * @member footnote 
-     * The start function will be executed when the currentTime 
-     * of the video  reaches the start time provided by the 
-     * options variable
+     * Expect one of pdfDoc or pdfUrl (must have one).  If we get
+     * a pdfDoc object, it means the file has already been preloaded
+     * and is ready to use (useful for larger PDF files).  Otherwise
+     * we need to load it ourselves and manage it.
      */
     start: function(event, options) {
       var url = options.pdfUrl,
+        doc = options.pdfDoc,
         page = options.pageNumber,
+        container = document.getElementById(options.target),
         canvas = options.__canvas = document.createElement('canvas'),
         ctx;
 
-      // TODO: support "next page" and "previous page"
-
-      var container = document.getElementById(options.target);
+      // TODO: need to cache/reuse canvas
       container.appendChild(canvas);
 
-      if (!docCache[url]) {
-        loadPdf(url, function(pdf) {
-          renderPage({
-            page: pdf.getPage(page),
-            canvas: canvas,
-            callback: function() {
-              console.log('done rendering page');
-            }
-          });
+      function drawPage(pdf) {
+        renderPage({
+          page: pdf.getPage(page),
+          canvas: canvas,
+          callback: function() {
+            console.log('done rendering page');
+          }
         });
       }
 
-      var pdf = docCache[url];
-      renderPage({
-        page: pdf.getPage(page),
-        canvas: canvas,
-        callback: function() {
-          console.log('done rendering page');
-        }
-      });
+      if (url && !_docCache[url]) {
+        loadPdf(url, drawPage)
+      }
+
+      // Use the pdfDoc passed in, or get the document from our cache
+      var pdf = doc && doc instanceof PDFDoc ? doc : _docCache[url];
+      drawPage(pdf);
     },
 
-    /**
-     * @member footnote 
-     * The end function will be executed when the currentTime 
-     * of the video  reaches the end time provided by the 
-     * options variable
-     */
+
     end: function(event, options){
       var canvas = options.__canvas;
 
