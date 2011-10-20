@@ -133,6 +133,8 @@
       var url = options.pdfUrl,
         doc = options.pdfDoc,
         page = options.pageNumber,
+        width = options.width || 0,
+        height = options.height || 0,
         container = document.getElementById(options.target),
         canvas = options.__canvas = document.createElement('canvas'),
         ctx;
@@ -144,8 +146,10 @@
         renderPage({
           page: pdf.getPage(page),
           canvas: canvas,
+          width: width,
+          height: height,
           callback: function() {
-            console.log('done rendering page');
+            // TODO
           }
         });
       }
