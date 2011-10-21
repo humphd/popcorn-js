@@ -18,6 +18,14 @@
    *       pdfPage: 6, // show page 6 of this PDF
    *       target: 'pdf-container', // DIV in which to load gist
    *     })
+   *     .pdf({
+   *       start: 35, // seconds
+   *       end: 75, // seconds
+   *       pdfUrl: 'url-of-another-pdf-file', // the PDF file to use (will be loaded)
+   *       preload: false, // Don't preload this, wait til we need it (default is preload=true)
+   *       pdfPage: 6, // show page 6 of this PDF
+   *       target: 'pdf-container', // DIV in which to load gist
+   *     })
    *     // Manage loading the PDF file yourself using pdfDoc.
    *     .pdf({
    *       start: 16, // seconds
@@ -42,7 +50,7 @@
   /**
    * Cached PDFDoc objects.
    */
-  var _docCache;
+  var _docCache = {};
 
   /**
    * Helper function to load and cache a PDF document with callbacks
@@ -110,29 +118,35 @@
         target     : 'pdf-container',
         width      : {elem:'input', type:'text', label:'Width'},
         height     : {elem:'input', type:'text', label:'Height'},
-        pdfUrl     : {elem:'input', type:'text', label:'PDF URL'},
+        src        : {elem:'input', type:'text', label:'PDF URL'},
         // TODO: Not sure how to deal with pdfDoc, which can only be done with script
         // pdfDoc     : ???
-        pageNumber : {elem:'input', type:'text', label:'Page Number'}
+        preload    : {elem:'input', type:'boolean', label:'Preload'},
+        page       : {elem:'input', type:'number', label:'Page Number'}
       }
     },
 
 
     _setup: function(options) {
-      _docCache = {};
+      var url = options.src,
+        preload = options.preload === false ? false : true;
+
+      if (url && preload && !_docCache[url]) {
+        loadPdf(url);
+      }
     },
 
 
     /**
-     * Expect one of pdfDoc or pdfUrl (must have one).  If we get
+     * Expect one of pdfDoc or src (must have one).  If we get
      * a pdfDoc object, it means the file has already been preloaded
      * and is ready to use (useful for larger PDF files).  Otherwise
      * we need to load it ourselves and manage it.
      */
     start: function(event, options) {
-      var url = options.pdfUrl,
+      var url = options.src,
         doc = options.pdfDoc,
-        page = options.pageNumber,
+        page = options.page || 1, // XXX: display first page if none given?
         width = options.width || 0,
         height = options.height || 0,
         container = document.getElementById(options.target),
@@ -155,7 +169,7 @@
       }
 
       if (url && !_docCache[url]) {
-        loadPdf(url, drawPage)
+        loadPdf(url, drawPage);
       }
 
       // Use the pdfDoc passed in, or get the document from our cache
