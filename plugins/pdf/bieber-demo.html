@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!--
+CSS template based on http://www.freecsstemplates.org/preview/barricade/
+-->
+<head>
+  <title>Bieber 3 Ways</title>
+  <link href="style.css" rel="stylesheet" type="text/css" media="screen" />
+  <script src="../../popcorn.js"></script>
+  <script src="../../players/youtube/popcorn.youtube.js"></script>
+  <script src="../../plugins/twitter/popcorn.twitter.js"></script>
+  <script src="pdf.js"></script>
+  <script src="popcorn.pdf.js"></script>
+  <script>
+    Popcorn(function() {
+      popcorn = Popcorn.youtube( '#video', 'http://www.youtube.com/watch?v=kffacxfA7G4&ob=av3n' )
+        .twitter({
+          start: 1,
+          title: "Bieber",
+          src: "#bieber",
+          width: 200,
+          height: 1320,
+          target: "twitter-div"
+        })
+        .defaults( 'pdf', {
+          pdfUrl: 'tweets-from-justin.pdf',
+          target: 'pdf-div'
+         });
+
+      // Spread pdf pages over the duration of the video
+      for (var i = 0, p=1; i < 220; i += 22, p++) {
+        popcorn.pdf({
+          start: i,
+          end: i + 22 - 1,
+          pageNumber: p
+        });
+      }
+
+      // End on the first page, leave it visible.
+      popcorn.pdf({
+        start: 221,
+        pageNumber: 1
+      })
+      .play();
+
+    });
+  </script>
+</head>
+<body>
+<div id="wrapper">
+	<div id="header-wrapper">
+		<div id="header">
+			<div id="logo">
+				<h1>Bieber 3 Ways</a></h1>
+				<p>A <a href="http://popcornjs.org">popcorn.js</a> demo of the <a href="https://github.com/andreasgal/pdf.js/">pdf.js</a> plugin.</p>
+			</div>
+		</div>
+	</div>
+	<!-- end #header -->
+	<div id="page">
+		<div id="page-bgtop">
+			<div id="page-bgbtm">
+				<div id="content">
+					<div class="post">
+						<h2 class="title"><a href="http://www.youtube.com/watch?v=kffacxfA7G4&feature=player_embedded">Bieber as Music Video</a></h2>
+						<div class="entry">
+               <div id="video" style="width: 560px; height: 315px;"></div>
+						</div>
+					</div>
+					<div class="post">
+						<h2 class="title"><a href="http://www.parc.com/publication/2590/tweets-from-justin-biebers-heart.html">Bieber as PDF</a></h2>
+						<div class="entry" style="height:795px !important;">
+              <div id="pdf-div"></div>
+						</div>
+					</div>
+					<div class="post">
+						<div class="entry">
+<p>This simple demo shows how the <a href="http://popcornjs.org">Popcorn.js</a> PDF plugin (based on Mozilla's <a href="https://github.com/andreasgal/pdf.js/">pdf.js</a> library) can be used.  Popcorn's YouTube player is used to time the display of pages in an <a href="http://www.parc.com/publication/2590/tweets-from-justin-biebers-heart.html">academic paper</a> (PDF file) about Justin Bieber and Twitter.  The Twitter plugin provides live tweets for the #bieber hash tag in order to provide context.</p>
+
+<p>Popcorn's PDF plugin can be used to display PDF slides with audio or video from a talk, display background information for a documentary, or show any PDF file(s) at particular times within a media file without needing any plugins or additional software.  Filmmakers with source materials in non-HTML formats can now produce PDF documents and have them rendered in Popcorn web experiences.</p>
+						</div>
+					</div>
+        </div>
+				<!-- end #content -->
+				<div id="sidebar">
+          <div id="twitter-div"></div>
+				</div>
+				<!-- end #sidebar -->
+				<div style="clear: both;">&nbsp;</div>
+			</div>
+		</div>
+	</div>
+	<!-- end #page -->
+<!--
+	<div id="footer">
+	</div>
+-->
+</div>
+<!-- end #footer -->
+</body>
+</html>
