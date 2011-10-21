@@ -22,8 +22,9 @@ CSS template based on http://www.freecsstemplates.org/preview/barricade/
           target: "twitter-div"
         })
         .defaults( 'pdf', {
-          pdfUrl: 'tweets-from-justin.pdf',
-          target: 'pdf-div'
+          src: 'tweets-from-justin.pdf',
+          target: 'pdf-div',
+          preload: false
          });
 
       // Spread pdf pages over the duration of the video
@@ -31,14 +32,14 @@ CSS template based on http://www.freecsstemplates.org/preview/barricade/
         popcorn.pdf({
           start: i,
           end: i + 22 - 1,
-          pageNumber: p
+          page: p
         });
       }
 
       // End on the first page, leave it visible.
       popcorn.pdf({
         start: 221,
-        pageNumber: 1
+        page: 1
       })
       .play();
 

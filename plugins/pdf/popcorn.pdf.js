@@ -55,27 +55,39 @@
   /**
    * Helper function to load and cache a PDF document with callbacks
    */
-  function loadPdf(url, callback, errback) {
-    callback = callback || function() {};
-    errback = errback || function() {};
+  var loadPdf = (function() {
+    var loading = {}; // URLs of PDFs currently loading (don't try to load)
 
-    getPdf(
-      {
-        url: url,
-        error: function() {
-          // TODO: need to log this somewhere...
-          console.log('unable to load doc `' + url + '`');
-          errback();
-        }
-      },
-      function(data) {
-        var pdf = new PDFDoc(data);
-        _docCache[url] = pdf;
-
-        callback(pdf);
+    return function loadPdf(url, callback, errback) {
+      if (loading[url]) {
+        // Already loading this doc, bail now
+        return;
       }
-    );
-  }
+
+      loading[url] = true;
+
+      callback = callback || function() {};
+      errback = errback || function() {};
+
+      getPdf(
+        {
+          url: url,
+          error: function() {
+            // TODO: need to log this somewhere...
+            console.log('unable to load doc `' + url + '`');
+            errback();
+          }
+        },
+        function(data) {
+          var pdf = new PDFDoc(data);
+          _docCache[url] = pdf;
+          delete loading[url];
+
+          callback(pdf);
+        }
+      );
+    };
+  }());
 
   /**
    * Renders a single page of a PDF document.  Defaults to using the
