@@ -42,31 +42,24 @@
   /**
    * Cached PDFDoc objects.
    */
-  var _docCache;
+  var _docCache,
+      _PDFJS;
 
   /**
    * Helper function to load and cache a PDF document with callbacks
    */
-  function loadPdf(url, callback, errback) {
+  function loadPdf( url, callback, errback ) {
+    if ( !_PDFJS ) {
+      return;
+    }
+
     callback = callback || function() {};
     errback = errback || function() {};
 
-    getPdf(
-      {
-        url: url,
-        error: function() {
-          // TODO: need to log this somewhere...
-          console.log('unable to load doc `' + url + '`');
-          errback();
-        }
-      },
-      function(data) {
-        var pdf = new PDFDoc(data);
-        _docCache[url] = pdf;
-
-        callback(pdf);
-      }
-    );
+    _PDFJS.getDocument( url ).then( function( pdfDoc ) {
+      _docCache[ url ] = pdfDoc;
+      callback( pdfDoc );
+    });
   }
 
   /**
@@ -74,24 +67,29 @@
    * natural dimensions of the page, unless alternate width/height
    * are given.
    */
-  function renderPage(options) {
+  function renderPage( options ) {
     var canvas = options.canvas,
       ctx = canvas.getContext('2d'),
       page = options.page,
-      width = options.width || page.width,
-      height = options.height || page.height,
-      callback = options.callback || function() {};
+      scale = 1,
+      viewport = page.getViewport( scale ),
+      width = options.width || viewport.width,
+      height = options.height || viewport.height;
+
+    // TODO:
+    // 14:33 < yury> humph: it's hard to define page width/height
+    // 14:33 < yury> you can define scale=1
+    // 14:34 < yury> and use canvas.transform to size it
+    // 14:34 < yury> or do double viewport
+    // 14:34 < yury> \canvas.scale()
+    // 14:36 < yury> page can be rotated
 
     canvas.width = width;
     canvas.height = height;
-    canvas.mozOpaque = true;
-
-    ctx.save();
-    ctx.fillStyle = 'rgb(255, 255, 255)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    page.startRendering(ctx, callback);
+    page.render({
+      canvasContext: ctx,
+      viewport: viewport
+    });
   }
 
 
@@ -119,6 +117,19 @@
 
 
     _setup: function(options) {
+      if ( !window.PDFJS ) {
+        Popcorn.getScript(
+          "https://raw.github.com/mozilla/pdf.js/gh-pages/build/pdf.js",
+          function() {
+            if( !window.PDFJS ) {
+              throw "Unable to load PDFJS";
+            } else {
+              _PDFJS = window.PDFJS;
+              _PDFJS.disableWorker = true;
+            }
+          }
+        );
+      }
       _docCache = {};
     },
 
@@ -142,25 +153,24 @@
       // TODO: need to cache/reuse canvas
       container.appendChild(canvas);
 
-      function drawPage(pdf) {
-        renderPage({
-          page: pdf.getPage(page),
-          canvas: canvas,
-          width: width,
-          height: height,
-          callback: function() {
-            // TODO
-          }
+      function drawPage( pdf ) {
+        pdf.getPage( page ).then( function( page ) {
+          renderPage({
+            page: page,
+            canvas: canvas,
+            width: width,
+            height: height
+          });
         });
       }
 
       if (url && !_docCache[url]) {
-        loadPdf(url, drawPage)
+        loadPdf(url, drawPage);
       }
 
       // Use the pdfDoc passed in, or get the document from our cache
-      var pdf = doc && doc instanceof PDFDoc ? doc : _docCache[url];
-      drawPage(pdf);
+      var pdf = (doc && doc instanceof PDFDoc) ? doc : _docCache[ url ];
+      drawPage( pdf );
     },
 
 
