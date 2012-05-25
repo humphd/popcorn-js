@@ -93,7 +93,7 @@
   }
 
   function addYouTubeCallback( callback ){
-    ytCallbacks.push( callback );
+    ytCallbacks.unshift( callback );
   }
 
   window.onYouTubePlayerAPIReady = function(){
@@ -156,7 +156,7 @@
 
     var playerReadyCallbacks = [];
     function addPlayerReadyCallback( callback ){
-      playerReadyCallbacks.push( callback );
+      playerReadyCallbacks.unshift( callback );
     }
     function onPlayerReady( event ){
       playerReady = true;
@@ -197,6 +197,9 @@
           impl.networkState = NETWORK_STATE.NETWORK_IDLE;
           impl.readyState = READY_STATE.HAVE_METADATA;
           dispatchEvent( "metadataloaded" );
+
+          impl.readyState = READY_STATE.HAVE_ENOUGH_DATA;
+          dispatchEvent( "canplay" );
           break;
 
         case YT.PlayerState.ENDED:
@@ -345,7 +348,7 @@
 
     self.pause = function(){
       if( !playerReady ){
-        // TODO: cache this?
+        addPlayerReadyCallback( function(){ self.pause(); } );
         return;
       }
       player.pauseVideo();
@@ -581,7 +584,18 @@
 
     canPlayType: function( url ) {
       return (/(?:http:\/\/www\.|http:\/\/|www\.|\.|^)(youtu)/).test( url ) ? "probably" : EMPTY_STRING;
-    }
+    },
+
+    NETWORK_EMPTY: 0,
+    NETWORK_IDLE: 1,
+    NETWORK_LOADING: 2,
+    NETWORK_NO_SOURCE: 3,
+
+    HAVE_NOTHING: 0,
+    HAVE_METADATA: 1,
+    HAVE_CURRENT_DATA: 2,
+    HAVE_FUTURE_DATA: 3,
+    HAVE_ENOUGH_DATA: 4
 
   };
 
