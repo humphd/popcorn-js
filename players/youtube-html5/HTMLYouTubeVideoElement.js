@@ -218,8 +218,9 @@
           break;
 
         case YT.PlayerState.CUED:
-          impl.readyState = READY_STATE.HAVE_ENOUGH_DATA;
-          dispatchEvent( "canplay" );
+// TODO: this seems wrong, but should work???
+//          impl.readyState = READY_STATE.HAVE_ENOUGH_DATA;
+//          dispatchEvent( "canplay" );
           break;
 
       }
@@ -320,6 +321,7 @@
     function onPlay(){
       if ( !currentTimeInterval ){
         currentTimeInterval = setInterval( monitorCurrentTime, CURRENT_TIME_MONITOR_MS ) ;
+        dispatchEvent( "playing" );
       }
 
       timeUpdateInterval = setInterval( onTimeUpdate, TIMEUPDATE_MS );
@@ -353,7 +355,7 @@
       document.addEventListener( eventNamespace + type, listener, useCapture );
     };
 
-    self.removeEventListener = function(){
+    self.removeEventListener = function( type, listener, useCapture ){
       document.removeEventListener( eventNamespace + type, listener, useCapture );
     };
 
