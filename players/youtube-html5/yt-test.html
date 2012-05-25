@@ -1,0 +1,50 @@
+<html>
+<head>
+  <script src="HTMLYouTubeVideoElement.js"></script>
+</head>
+<body>
+  <div id="video"></div>
+  <script>
+
+    var video = new HTMLYouTubeVideoElement( "#video" );
+
+    video.addEventListener( "metadataloaded", function(){
+      console.log("metadataloaded", video.currentSrc);
+    }, false);
+
+    video.addEventListener( "durationchange", function(){
+      console.log("durationchange", video.duration);
+    }, false);
+
+    video.addEventListener( "seeking", function(){
+      console.log("seeking", video.seeking);
+    }, false);
+
+    video.addEventListener( "seeked", function(){
+      console.log("seeked", video.seeking);
+    }, false);
+
+    video.addEventListener( "timeupdate", function(){
+      console.log("timeupdate", video.currentTime);
+    }, false);
+
+    video.addEventListener( "pause", function(){
+      console.log("pause");
+    }, false);
+
+    video.addEventListener( "play", function(){
+      console.log("play");
+    }, false);
+
+    video.addEventListener( "ended", function(){
+      console.log("ended", video.ended);
+    }, false);
+
+
+    video.autoplay = true;
+
+    video.src = "http://www.youtube.com/watch?v=nfGV32RNkhw";
+
+  </script>
+</body>
+</html>
