@@ -12,6 +12,25 @@ test( "canPlayType for YouTube", function(){
 });
 
 
+test( "currentSrc", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+  equal( video.currentSrc, "", "currentSrc is empty if there is no source" );
+
+  video.src = videoSrc;
+  notEqual( video.currentSrc, "", "currentSrc is not empty after setting src" );
+
+});
+
+
+test( "error", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+  equal( video.error, null, "error is null if no source" );
+
+});
+
+
 asyncTest( "canplay event", 1, function(){
 
   var video = new HTMLYouTubeVideoElement( "#video" );

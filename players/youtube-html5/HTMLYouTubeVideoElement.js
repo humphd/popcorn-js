@@ -52,33 +52,18 @@
 
   CURRENT_TIME_MONITOR_MS = 10,
 
-  NETWORK_STATE = {
-    NETWORK_EMPTY: 0,
-    NETWORK_IDLE: 1,
-    NETWORK_LOADING: 2,
-    NETWORK_NO_SOURCE: 3
-  },
-
-  READY_STATE = {
-    HAVE_NOTHING: 0,
-    HAVE_METADATA: 1,
-    HAVE_CURRENT_DATA: 2,
-    HAVE_FUTURE_DATA: 3,
-    HAVE_ENOUGH_DATA: 4
-  },
-
   EMPTY_STRING = "",
 
   regexYouTube = /^.*(?:\/|v=)(.{11})/,
 
   seed = Date.now(),
 
-  NOP = function(){} ;
+  NOP = function(){},
 
   // Setup for YouTube API
-  var ytReady = false,
-      ytLoaded = false,
-      ytCallbacks = [];
+  ytReady = false,
+  ytLoaded = false,
+  ytCallbacks = [];
 
   function isYouTubeReady(){
     // If the YouTube iframe API isn't injected, to it now.
@@ -120,8 +105,8 @@
 
     var impl = {
       src: EMPTY_STRING,
-      networkState: NETWORK_STATE.NETWORK_EMPTY,
-      readyState: READY_STATE.HAVE_NOTHING,
+      networkState: self.NETWORK_EMPTY,
+      readyState: self.HAVE_NOTHING,
       seeking: false,
       autoPlay: EMPTY_STRING,
       preload: EMPTY_STRING,
@@ -133,7 +118,8 @@
       duration: NaN,
       ended: false,
       paused: true,
-      volume: 1
+      volume: 1,
+      error: nulll
     };
 
     var playerReady = false,
@@ -181,9 +167,8 @@
       var oldDuration = impl.duration,
           newDuration = player.getDuration();
 
-      impl.duration = newDuration;
-
       if( oldDuration !== newDuration ){
+        impl.duration = newDuration;
         dispatchEvent( "durationchange" );
       }
 
@@ -194,11 +179,11 @@
       switch( event.data ){
 
         case -1:
-          impl.networkState = NETWORK_STATE.NETWORK_IDLE;
-          impl.readyState = READY_STATE.HAVE_METADATA;
+          impl.networkState = self.NETWORK_IDLE;
+          impl.readyState = self.HAVE_METADATA;
           dispatchEvent( "metadataloaded" );
 
-          impl.readyState = READY_STATE.HAVE_ENOUGH_DATA;
+          impl.readyState = self.HAVE_ENOUGH_DATA;
           dispatchEvent( "canplay" );
           break;
 
@@ -216,7 +201,7 @@
           break;
 
         case YT.PlayerState.BUFFERING:
-          impl.networkState = NETWORK_STATE.NETWORK_LOADING;
+          impl.networkState = self.NETWORK_LOADING;
           dispatchEvent( "waiting" );
           break;
 
@@ -244,6 +229,8 @@
     }
 
     function changeSrc( aSrc ){
+      impl.src = aSrc;
+
       // Make sure YouTube is ready, and if not, register a callback
       if( !isYouTubeReady() ){
         addYouTubeCallback( function() { changeSrc( aSrc ); } );
@@ -259,8 +246,6 @@
       elem.width = parent.width|0 ? parent.width : 300;
       elem.height = parent.height|0 ? parent.height : 200;
       parent.appendChild( elem );
-
-      impl.src = aSrc;
 
       // Get video ID out of youtube url
       // TODO: error check this...
@@ -305,6 +290,15 @@
       lastCurrentTime = impl.currentTime;
     }
 
+    function getCurrentTime(){
+      if( !playerReady ){
+        return 0;
+      }
+
+      impl.currentTime = player.getCurrentTime();
+      return impl.currentTime;
+    }
+
     function changeCurrentTime( aTime ){
       if( !playerReady ){
         addPlayerReadyCallback( function(){ changeCurrentTime( aTime ); } );
@@ -323,11 +317,13 @@
 
     function onPlay(){
       if ( !currentTimeInterval ){
-        currentTimeInterval = setInterval( monitorCurrentTime, CURRENT_TIME_MONITOR_MS ) ;
+        currentTimeInterval = setInterval( monitorCurrentTime,
+                                           CURRENT_TIME_MONITOR_MS ) ;
         dispatchEvent( "playing" );
       }
 
-      timeUpdateInterval = setInterval( onTimeUpdate, TIMEUPDATE_MS );
+      timeUpdateInterval = setInterval( onTimeUpdate,
+                                        TIMEUPDATE_MS );
       impl.paused = false;
       dispatchEvent( "play" );
     }
@@ -460,20 +456,9 @@
         }
       },
 
-      buffered: {
-        get: function(){
-          // Fake a TimeRanges object
-          return {
-            length: 0,
-            start: NOP,
-            end: NOP
-          };
-        }
-      },
-
       currentTime: {
         get: function(){
-          return impl.currentTime;
+          return getCurrentTime();
         },
         set: function( aValue ){
           // TODO: do seeking, type check...
@@ -503,28 +488,6 @@
         }
       },
 
-      played: {
-        get: function(){
-          // Fake a TimeRanges object
-          return {
-            length: 0,
-            start: NOP,
-            end: NOP
-          };
-        }
-      },
-
-      seekable: {
-        get: function(){
-          // Fake a TimeRanges object
-          return {
-            length: 0,
-            start: NOP,
-            end: NOP
-          };
-        }
-      },
-
       seeking: {
         get: function(){
           return impl.seeking;
@@ -534,12 +497,6 @@
       readyState: {
         get: function(){
           return impl.readyState;
-        }
-      },
-
-      crossorigin: {
-        get: function(){
-          return EMPTY_STRING;
         }
       },
 
@@ -557,6 +514,12 @@
           // TODO: normalize, adjust player volume
           impl.volume = aValue;
         }
+      },
+
+      error: {
+        get: function(){
+          return impl.error;
+        }
       }
 
 
@@ -565,8 +528,6 @@
       // defaultMuted
 
       // defaultPlaybackRate
-
-      // error
 
       // initialTime
 
@@ -580,10 +541,52 @@
 
   HTMLYouTubeVideoElement.prototype = {
 
+    crossorigin: {
+      get: function(){
+        return EMPTY_STRING;
+      }
+    },
+
+    played: {
+      get: function(){
+        // Fake a TimeRanges object
+        return {
+          length: 0,
+          start: NOP,
+          end: NOP
+        };
+      }
+    },
+
+    seekable: {
+      get: function(){
+        // Fake a TimeRanges object
+        return {
+          length: 0,
+          start: NOP,
+          end: NOP
+        };
+      }
+    },
+
+    buffered: {
+      get: function(){
+        // Fake a TimeRanges object
+        return {
+          length: 0,
+          start: NOP,
+          end: NOP
+        };
+      }
+    },
+
+    // TODO: implement load()
     load: NOP,
 
     canPlayType: function( url ) {
-      return (/(?:http:\/\/www\.|http:\/\/|www\.|\.|^)(youtu)/).test( url ) ? "probably" : EMPTY_STRING;
+      return (/(?:http:\/\/www\.|http:\/\/|www\.|\.|^)(youtu)/).test( url ) ?
+              "probably" :
+              EMPTY_STRING;
     },
 
     NETWORK_EMPTY: 0,
