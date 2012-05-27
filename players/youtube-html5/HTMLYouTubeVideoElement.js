@@ -119,7 +119,7 @@
       ended: false,
       paused: true,
       volume: 1,
-      error: nulll
+      error: null
     };
 
     var playerReady = false,
@@ -146,15 +146,16 @@
     }
     function onPlayerReady( event ){
       playerReady = true;
-      var i = playerReadyCallbacks.length;
-      while( i-- ){
-        playerReadyCallbacks[ i ]();
-        delete playerReadyCallbacks[ i ];
-      }
 
       // Auto-start if necessary
       if( impl.autoplay ){
         self.play();
+      }
+
+      var i = playerReadyCallbacks.length;
+      while( i-- ){
+        playerReadyCallbacks[ i ]();
+        delete playerReadyCallbacks[ i ];
       }
     }
 
@@ -181,10 +182,14 @@
         case -1:
           impl.networkState = self.NETWORK_IDLE;
           impl.readyState = self.HAVE_METADATA;
-          dispatchEvent( "metadataloaded" );
+          dispatchEvent( "loadedmetadata" );
+
+          // XXX: this should really live in cued below, but doesn't work.
+          impl.readyState = self.HAVE_FUTURE_DATA;
+          dispatchEvent( "canplay" );
 
           impl.readyState = self.HAVE_ENOUGH_DATA;
-          dispatchEvent( "canplay" );
+          dispatchEvent( "canplaythrough" );
           break;
 
         case YT.PlayerState.ENDED:
@@ -206,9 +211,14 @@
           break;
 
         case YT.PlayerState.CUED:
-// TODO: this seems wrong, but should work???
-//          impl.readyState = READY_STATE.HAVE_ENOUGH_DATA;
-//          dispatchEvent( "canplay" );
+
+          // XXX: cued doesn't seem to fire reliably, bug in youtube api?
+          // impl.readyState = self.HAVE_FUTURE_DATA;
+          // dispatchEvent( "canplay" );
+          //
+          // impl.readyState = self.HAVE_ENOUGH_DATA;
+          // dispatchEvent( "canplaythrough" );
+
           break;
 
       }
@@ -275,17 +285,14 @@
 
       // See if the user seeked the video via controls
       if( Math.abs( lastCurrentTime - currentTime ) > CURRENT_TIME_MONITOR_MS ){
-        impl.seeking = true;
-        dispatchEvent( "seeking" );
-        impl.seeking = false;
-        dispatchEvent( "seeked" );
+        onSeeking();
+        onSeeked();
       }
 
       // See if we had a pending seek via code
       if( seekTarget === impl.currentTime ){
         seekTarget = -1;
-        impl.seeking = false;
-        dispatchEvent( "seeked" );
+        onSeeked();
       }
       lastCurrentTime = impl.currentTime;
     }
@@ -313,6 +320,16 @@
     var timeUpdateInterval;
     function onTimeUpdate(){
       dispatchEvent( "timeupdate" );
+    }
+
+    function onSeeking(){
+      impl.seeking = true;
+      dispatchEvent( "seeking" );
+    }
+
+    function onSeeked(){
+      impl.seeking = false;
+      dispatchEvent( "seeked" );
     }
 
     function onPlay(){

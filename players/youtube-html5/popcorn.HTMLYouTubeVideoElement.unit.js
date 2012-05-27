@@ -31,16 +31,134 @@ test( "error", function(){
 });
 
 
+test( "networkState", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+  equal( video.networkState, video.NETWORK_EMPTY, "networkState is initially NETWORK_EMPTY" );
+
+});
+
+
 asyncTest( "canplay event", 1, function(){
 
   var video = new HTMLYouTubeVideoElement( "#video" );
 
   video.addEventListener( "canplay", function() {
     video.pause();
-    ok( true, "canplay through fired" );
+    ok( true, "canplay fired" );
     start();
   }, false);
 
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "readyState in canplay", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "canplay", function() {
+    video.pause();
+    ok( video.readyState >= video.HAVE_FUTURE_DATA,
+        "video.readyState should be >= HAVE_FUTURE_DATA during canplay event" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "readyState in canplaythrough", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "canplaythrough", function() {
+    video.pause();
+    equal( video.readyState, video.HAVE_ENOUGH_DATA,
+           "video.readyState should be HAVE_ENOUGH_DATA during canplaythrough event" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "readyState in loadedmetadata", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "loadedmetadata", function() {
+    video.pause();
+    equal( video.readyState, video.HAVE_METADATA,
+        "video.readyState should >= HAVE_METADATA during loadedmetadata event" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "canplaythrough event", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "canplaythrough", function() {
+    video.pause();
+    ok( true, "canplaythrough fired" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "canplay, canplaythrough event order", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" ),
+      canplay = false;
+
+  video.addEventListener( "canplay", function() {
+    canplay = true;
+  }, false);
+
+  video.addEventListener( "canplaythrough", function() {
+    video.pause();
+    ok( canplay, "canplay before canplaythrough" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "canplay, playing event order", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" ),
+      canplay = false;
+
+  video.addEventListener( "canplay", function() {
+    canplay = true;
+  }, false);
+
+  video.addEventListener( "playing", function() {
+    video.pause();
+    ok( canplay, "canplay before playing" );
+    start();
+  }, false);
+
+  video.autoplay = true;
   video.src = videoSrc;
 
 });
@@ -53,6 +171,54 @@ asyncTest( "paused false during play", 1, function(){
   video.addEventListener( "play", function() {
     ok( !video.paused, "paused is false while playing" );
     video.pause();
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "pause event", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "pause", function() {
+    ok( true, "pause() triggers pause" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+  video.pause();
+
+});
+
+
+asyncTest( "play event", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "play", function() {
+    video.pause();
+    ok( true, "play event triggered by autoplay" );
+    start();
+  }, false);
+
+  video.autoplay = true;
+  video.src = videoSrc;
+
+});
+
+
+asyncTest( "playing event", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "playing", function() {
+    video.pause();
+    ok( true, "playing event triggered by autoplay" );
     start();
   }, false);
 
@@ -92,12 +258,12 @@ asyncTest( "readyState during canplay", 1, function(){
 });
 
 
-asyncTest( "Setting src loads video, triggers metadataloaded, sets currentSrc", 1, function(){
+asyncTest( "Setting src loads video, triggers loadedmetadata, sets currentSrc", 1, function(){
 
   var video = new HTMLYouTubeVideoElement( "#video" );
 
-  video.addEventListener( "metadataloaded", function(){
-    equal( videoSrc, video.currentSrc, "currentSrc is set in metadataloaded" );
+  video.addEventListener( "loadedmetadata", function(){
+    equal( videoSrc, video.currentSrc, "currentSrc is set in loadedmetadata" );
     start();
   }, false);
 
