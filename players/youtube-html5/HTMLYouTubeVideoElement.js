@@ -60,6 +60,8 @@
 
   NOP = function(){},
 
+  ABS = Math.abs,
+
   // Setup for YouTube API
   ytReady = false,
   ytLoaded = false,
@@ -226,8 +228,7 @@
 
         // ended
         case YT.PlayerState.ENDED:
-          impl.ended = true;
-          dispatchEvent( "ended" );
+          onEnded();
           break;
 
         // playing
@@ -248,7 +249,7 @@
 
         // video cued
         case YT.PlayerState.CUED:
-console.log('cued');
+
           // XXX: cued doesn't seem to fire reliably, bug in youtube api?
           // impl.readyState = self.HAVE_FUTURE_DATA;
           // dispatchEvent( "canplay" );
@@ -323,13 +324,16 @@ console.log('cued');
       var currentTime = impl.currentTime = player.getCurrentTime();
 
       // See if the user seeked the video via controls
-      if( Math.abs( lastCurrentTime - currentTime ) > CURRENT_TIME_MONITOR_MS ){
+      if( ABS( lastCurrentTime - currentTime ) > CURRENT_TIME_MONITOR_MS ){
         onSeeking();
         onSeeked();
       }
 
-      // See if we had a pending seek via code
-      if( seekTarget === impl.currentTime ){
+      // See if we had a pending seek via code.  YouTube drops us within
+      // 1 second of our target time, so we have to round a bit, or miss
+      // many seek ends.
+      if( ( seekTarget > -1 ) &&
+          ( ABS( currentTime - seekTarget ) < 1 ) ){
         seekTarget = -1;
         onSeeked();
       }
@@ -353,8 +357,7 @@ console.log('cued');
         return;
       }
 
-      // TODO: normalize, validate time???
-      onSeeking();
+      onSeeking( aTime );
       player.seekTo( aTime );
     }
 
@@ -363,7 +366,10 @@ console.log('cued');
       dispatchEvent( "timeupdate" );
     }
 
-    function onSeeking(){
+    function onSeeking( target ){
+      if( target !== undefined ){
+        seekTarget = target;
+      }
       impl.seeking = true;
       dispatchEvent( "seeking" );
     }
@@ -375,16 +381,32 @@ console.log('cued');
     }
 
     function onPlay(){
+      if( impl.ended ){
+        changeCurrentTime( 0 );
+      }
+
       if ( !currentTimeInterval ){
         currentTimeInterval = setInterval( monitorCurrentTime,
                                            CURRENT_TIME_MONITOR_MS ) ;
         dispatchEvent( "playing" );
+
+        // TODO: this is hacky, want only 1 play when video.loop=true
+        if ( impl.loop ){
+          dispatchEvent( "play" );
+        }
       }
 
       timeUpdateInterval = setInterval( onTimeUpdate,
                                         TIMEUPDATE_MS );
-      impl.paused = false;
-      dispatchEvent( "play" );
+
+      if( impl.paused ){
+        impl.paused = false;
+
+        // TODO: this is hacky, want only 1 play when video.loop=true
+        if ( !impl.loop ){
+          dispatchEvent( "play" );
+        }
+      }
     }
 
     self.play = function(){
@@ -408,6 +430,16 @@ console.log('cued');
       }
       player.pauseVideo();
     };
+
+    function onEnded(){
+      if( impl.loop ){
+        changeCurrentTime( 0 );
+        self.play();
+      } else {
+        impl.ended = true;
+        dispatchEvent( "ended" );
+      }
+    }
 
     function setVolume( aValue ){
       if( !playerReady ){
@@ -512,7 +544,6 @@ console.log('cued');
           return impl.loop;
         },
         set: function( aValue ){
-          // TODO: wire up looping...
           impl.loop = !!aValue;
         }
       },

@@ -247,7 +247,7 @@ asyncTest( "paused false during play", 1, function(){
   var video = new HTMLYouTubeVideoElement( "#video" );
 
   video.addEventListener( "play", function() {
-    ok( !video.paused, "paused is false while playing" );
+    ok( !video.paused, "paused is false during play" );
     video.pause();
     start();
   }, false);
@@ -397,5 +397,73 @@ asyncTest( "currentTime, seeking, seeked", 2, function(){
 
   video.autoplay = true;
   video.src = videoSrc;
+
+});
+
+
+asyncTest( "ended", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "loadedmetadata", function(){
+    video.currentTime = 149;
+  }, false);
+
+  video.addEventListener( "seeked", function(){
+    video.play();
+  }, false);
+
+  video.addEventListener( "ended", function(){
+    ok( true, "ended fired at end" );
+    video.pause();
+    start();
+  }, false);
+
+  video.src = videoSrc;
+  video.muted = true;
+
+});
+
+
+asyncTest( "loop (NOTE: test takes a minute to complete)", 3, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" ),
+      playCount = 0,
+      seekingCount = 0,
+      seekedCount = 0;
+
+  video.addEventListener( "play", function(){
+console.log('play');
+    playCount += 1;
+    equal( playCount, 1, "Should get exactly one play event." );
+  }, false);
+
+  video.addEventListener( "seeking", function(){
+console.log('seeking');
+    seekingCount += 1;
+  }, false);
+
+  video.addEventListener( "seeked", function(){
+console.log('seeked');
+    seekedCount += 1;
+
+    if( seekedCount === 3 ){
+      equal( seekingCount, 3, "Expect matched pairs of seeking/seeked events.");
+      video.loop = false;
+    }
+  }, false);
+
+  video.addEventListener( "ended", function(){
+console.log('ended');
+    equal( video.loop, false, "Shouldn't get ended event while looping." );
+    start();
+  }, false);
+
+  video.loop = true;
+
+  // 4 second clip
+  video.src = "http://www.youtube.com/watch?v=AXwGVXD7qEQ";
+  video.muted = true;
+  video.play();
 
 });
