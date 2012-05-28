@@ -311,9 +311,9 @@
         addPlayerReadyCallback( function(){ changeCurrentTime( aTime ); } );
         return;
       }
+
       // TODO: normalize, validate time???
-      seekTarget = aTime;
-      impl.seeking = true;
+      onSeeking();
       player.seekTo( aTime );
     }
 
