@@ -113,12 +113,12 @@
       controls: true,
       loop: false,
       poster: EMPTY_STRING,
+      volume: -1,
       muted: false,
       currentTime: 0,
       duration: NaN,
       ended: false,
       paused: true,
-      volume: 1,
       error: null
     };
 
@@ -144,6 +144,7 @@
     function addPlayerReadyCallback( callback ){
       playerReadyCallbacks.unshift( callback );
     }
+
     function onPlayerReady( event ){
       playerReady = true;
 
@@ -161,13 +162,13 @@
 
     function getDuration(){
       if( !playerReady ){
+        // Queue a getDuration() call so we have correct duration info for loadedmetadata
         addPlayerReadyCallback( function(){ getDuration(); } );
-        return;
+        return impl.duration;
       }
 
       var oldDuration = impl.duration,
           newDuration = player.getDuration();
-
       if( oldDuration !== newDuration ){
         impl.duration = newDuration;
         dispatchEvent( "durationchange" );
@@ -176,9 +177,40 @@
       return newDuration;
     }
 
+    function onPlayerError(event) {
+      // There's no perfect mapping to HTML5 errors from YouTube errors.
+      var err = { name: "MediaError" };
+
+      switch( event.data ){
+
+        // invalid parameter
+        case 2:
+          err.message = "Invalid video parameter.";
+          err.code = self.MEDIA_ERR_ABORTED;
+          break;
+
+        // requested video not found
+        case 100:
+          err.message = "Video not found.";
+          err.code = self.MEDIA_ERR_NETWORK;
+          break;
+
+        // video can't be embedded by request of owner
+        case 101:
+        case 150:
+          err.message = "Video not usable.";
+          err.code = self.MEDIA_ERR_SRC_NOT_SUPPORTED;
+          break;
+      }
+
+      impl.error = err;
+      dispatchEvent( "error" );
+    }
+
     function onPlayerStateChange( event ){
       switch( event.data ){
 
+        // unstarted
         case -1:
           impl.networkState = self.NETWORK_IDLE;
           impl.readyState = self.HAVE_METADATA;
@@ -192,26 +224,31 @@
           dispatchEvent( "canplaythrough" );
           break;
 
+        // ended
         case YT.PlayerState.ENDED:
           impl.ended = true;
           dispatchEvent( "ended" );
           break;
 
+        // playing
         case YT.PlayerState.PLAYING:
           onPlay();
           break;
 
+        // paused
         case YT.PlayerState.PAUSED:
           onPause();
           break;
 
+        // buffering
         case YT.PlayerState.BUFFERING:
           impl.networkState = self.NETWORK_LOADING;
           dispatchEvent( "waiting" );
           break;
 
+        // video cued
         case YT.PlayerState.CUED:
-
+console.log('cued');
           // XXX: cued doesn't seem to fire reliably, bug in youtube api?
           // impl.readyState = self.HAVE_FUTURE_DATA;
           // dispatchEvent( "canplay" );
@@ -220,7 +257,6 @@
           // dispatchEvent( "canplaythrough" );
 
           break;
-
       }
     }
 
@@ -231,7 +267,9 @@
       clearInterval( currentTimeInterval );
       player.stopVideo();
       player.clearVideo();
-      // dispatch any events???
+
+      // TODO: dispatch any events???
+
       parent.removeChild( elem );
       elem = null;
 
@@ -268,6 +306,7 @@
         events: {
           // TODO: wire up rest of handlers...
           'onReady': onPlayerReady,
+          'onError': onPlayerError,
           'onStateChange': onPlayerStateChange
         }
       });
@@ -295,6 +334,8 @@
         onSeeked();
       }
       lastCurrentTime = impl.currentTime;
+
+      // TODO: also monitor muted, volume, etc. for user interaction?
     }
 
     function getCurrentTime(){
@@ -329,6 +370,7 @@
 
     function onSeeked(){
       impl.seeking = false;
+      dispatchEvent( "timeupdate" );
       dispatchEvent( "seeked" );
     }
 
@@ -366,6 +408,46 @@
       }
       player.pauseVideo();
     };
+
+    function setVolume( aValue ){
+      if( !playerReady ){
+        impl.volume = aValue;
+        addPlayerReadyCallback( function(){
+          setVolume( impl.volume );
+          impl.volume = -1;
+        });
+        return;
+      }
+
+      player.setVolume( aValue );
+      dispatchEvent( "volumechange" );
+    }
+
+    function getVolume(){
+      if( !playerReady ){
+        return impl.volume > -1 ? impl.volume : 1;
+      }
+      // TODO: better to maintain our own value internally so changes are sync?
+      return player.getVolume();
+    }
+
+    function setMuted( aValue ){
+      if( !playerReady ){
+        impl.muted = aValue;
+        addPlayerReadyCallback( function(){ setMuted( impl.muted ); } );
+        return;
+      }
+      player[ aValue ? "mute" : "unMute" ]();
+      dispatchEvent( "volumechange" );
+    }
+
+    function getMuted(){
+      if( !playerReady ){
+        return impl.muted;
+      }
+      // TODO: better to maintain our own value internally so changes are sync?
+      return player.isMuted();
+    }
 
     self.addEventListener = function( type, listener, useCapture ){
       document.addEventListener( eventNamespace + type, listener, useCapture );
@@ -463,16 +545,6 @@
         }
       },
 
-      muted: {
-        get: function(){
-          return impl.muted;
-        },
-        set: function( aValue ){
-          // TODO: mute video
-          impl.muted = !!aValue;
-        }
-      },
-
       currentTime: {
         get: function(){
           return getCurrentTime();
@@ -525,11 +597,28 @@
 
       volume: {
         get: function(){
-          return impl.volume;
+          // Remap from HTML5's 0-1 to YouTube's 0-100 range
+          var volume = getVolume();
+          return volume / 100;
         },
         set: function( aValue ){
-          // TODO: normalize, adjust player volume
-          impl.volume = aValue;
+          if( aValue < 0 || aValue > 1 ){
+            throw "Volume value must be between 0.0 and 1.0";
+          }
+
+          // Remap from HTML5's 0-1 to YouTube's 0-100 range
+          aValue = aValue * 100;
+
+          setVolume( aValue );
+        }
+      },
+
+      muted: {
+        get: function(){
+          return getMuted();
+        },
+        set: function( aValue ){
+          setMuted( !!aValue );
         }
       },
 
@@ -615,7 +704,12 @@
     HAVE_METADATA: 1,
     HAVE_CURRENT_DATA: 2,
     HAVE_FUTURE_DATA: 3,
-    HAVE_ENOUGH_DATA: 4
+    HAVE_ENOUGH_DATA: 4,
+
+    MEDIA_ERR_ABORTED: 1,
+    MEDIA_ERR_NETWORK: 2,
+    MEDIA_ERR_DECODE: 3,
+    MEDIA_ERR_SRC_NOT_SUPPORTED: 4
 
   };
 

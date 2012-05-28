@@ -31,6 +31,84 @@ test( "error", function(){
 });
 
 
+test( "error when video parameter is bad", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "error", function() {
+    equal( video.error.code, video.MEDIA_ERR_ABORTED, "MEDIA_ERR_ABORTED when param is invalid." );
+    start();
+  }, false);
+
+  video.src = "http://www.youtube.com/watch?v=aaaaaaaaaaa";
+
+});
+
+
+test( "muted", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  equal( video.muted, false, "muted is false by default" );
+
+  video.muted = true;
+  equal( video.muted, true, "muted is true" );
+
+});
+
+
+asyncTest( "volumechange for volume", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "volumechange", function() {
+    video.pause();
+    equal( video.volume, 0.5, "volumechange fires when volume is changed" );
+    start();
+  }, false);
+
+  video.src = videoSrc;
+  video.volume = 0.5;
+  video.play();
+
+});
+
+
+/** TODO...
+asyncTest( "volumechange for muted", 1, function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.addEventListener( "volumechange", function() {
+    video.pause();
+    ok( video.muted, "volumechange fires when muted is changed" );
+    start();
+  }, false);
+
+  video.src = videoSrc;
+  video.muted = true;
+  video.play();
+
+});
+***/
+
+test( "Volume values", function(){
+
+  var video = new HTMLYouTubeVideoElement( "#video" );
+
+  video.volume = 0;
+  equal( video.volume, 0, "Setting volume to 0" );
+
+  video.volume = 1;
+  equal( video.volume, 1, "Setting volume to 1" );
+
+  // Invalid volume values (outside 0.0 to 1.0)
+  raises( function(){ video.volume = -0.1; } );
+  raises( function(){ video.volume = 1.1; } );
+
+});
+
+
 test( "networkState", function(){
 
   var video = new HTMLYouTubeVideoElement( "#video" );
