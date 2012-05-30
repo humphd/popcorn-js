@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>HTMLYouTubeVideoElement x-tag Demo</title>
+
+    <link rel="stylesheet" type="text/css" href="x-video.css" />
+
+    <script type="text/javascript" src="HTMLYouTubeVideoElement.js"></script>
+    <script type="text/javascript" src="x-tag.js"></script>
+    <script type="text/javascript" src="x-video.js"></script>
+
+  </head>
+
+  <body>
+
+    <h1>x-video: An HTMLYouTubeVideoElement x-tag demo</h1>
+
+    <p>This demo uses an experimental HTML5 video wrapper for the YouTube IFrame API called <a href="https://github.com/humphd/popcorn-js/tree/ythtml5/players/youtube-html5">HTMLYouTubeVideoElement.js</a> and <a href="https://github.com/csuwldcat/x-tag">x-tag.js</a> in order to create a custom &lt;x-video&gt; element.  The &lt;x-video&gt; element works just like a &lt;video&gt; element, but uses YouTube instead of a built-in decoder</p>
+
+    <p>The code looks like this:</p>
+
+    <pre>
+    &lt;x-video id="video"
+             width="400"
+             height="300"
+             src="http://www.youtube.com/watch?v=nfGV32RNkhw"
+             loop
+             autoplay&gt;
+    &lt;/x-video&gt;
+    </pre>
+
+    <p>You can look at the <a href="x-video.js">x-video.js</a> code, and here is the running &lt;x-video&gt; element this produces:</p>
+    <x-video id="video"
+             width="400"
+             height="300"
+             src="http://www.youtube.com/watch?v=nfGV32RNkhw"
+             loop
+             autoplay>
+    </x-video>
+
+    <p>Video Credit: <a href="http://www.youtube.com/watch?feature=player_embedded&v=nfGV32RNkhw">RiP Trailer: A Remix Manifesto</a> by Brett Gaylor</p>
+  </body>
+</html>

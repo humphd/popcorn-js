@@ -54,6 +54,10 @@
 
   EMPTY_STRING = "",
 
+  // YouTube suggests 200x200 as minimum, video spec says 300x150.
+  MIN_WIDTH = 300,
+  MIN_HEIGHT = 200,
+
   regexYouTube = /^.*(?:\/|v=)(.{11})/,
 
   seed = Date.now(),
@@ -102,7 +106,7 @@
 
     var self = this;
 
-    var parent = typeof id === "string" ? document.querySelector( id ) : parent,
+    var parent = typeof id === "string" ? document.querySelector( id ) : id,
       elem;
 
     var impl = {
@@ -121,6 +125,8 @@
       duration: NaN,
       ended: false,
       paused: true,
+      width: parent.width|0   ? parent.width  : MIN_WIDTH,
+      height: parent.height|0 ? parent.height : MIN_HEIGHT,
       error: null
     };
 
@@ -291,9 +297,8 @@
       }
 
       elem = document.createElement("div");
-      // YouTube suggests 200x200 as minimum, video spec says 300x150.
-      elem.width = parent.width|0 ? parent.width : 300;
-      elem.height = parent.height|0 ? parent.height : 200;
+      elem.width = impl.width;
+      elem.height = impl.height;
       parent.appendChild( elem );
 
       // Get video ID out of youtube url
@@ -301,8 +306,8 @@
       aSrc = regexYouTube.exec( aSrc )[ 1 ];
 
       player = new YT.Player( elem, {
-        height: elem.height,
-        width: elem.width,
+        width: impl.width,
+        height: impl.height,
         videoId: aSrc,
         events: {
           // TODO: wire up rest of handlers...
@@ -489,6 +494,14 @@
       document.removeEventListener( eventNamespace + type, listener, useCapture );
     };
 
+    // Check for attribute being set or value being set in JS.  The following are true:
+    // autoplay
+    // autoplay="true"
+    // v.autoplay=true;
+    function isAttributeSet( value ){
+      return ( typeof value === "string" || value === true );
+    }
+
     // Expose various properties, similar to a <video>
     Object.defineProperties( self, {
 
@@ -514,7 +527,7 @@
           return impl.autoplay;
         },
         set: function( aValue ){
-          impl.autoplay = !!aValue;
+          impl.autoplay = isAttributeSet( aValue );
         }
       },
 
@@ -535,7 +548,7 @@
         },
         set: function( aValue ){
           // TODO: can we show/hide controls?
-          impl.controls = !!aValue;
+          impl.controls = isAttributeSet( aValue );
         }
       },
 
@@ -544,7 +557,7 @@
           return impl.loop;
         },
         set: function( aValue ){
-          impl.loop = !!aValue;
+          impl.loop = isAttributeSet( aValue );
         }
       },
 
@@ -563,7 +576,7 @@
           return elem.width;
         },
         set: function( aValue ){
-          elem.width = aValue;
+          impl.width = aValue;
         }
       },
 
@@ -572,7 +585,7 @@
           return elem.height;
         },
         set: function( aValue ){
-          elem.height = aValue;
+          impl.height = aValue;
         }
       },
 
@@ -649,7 +662,7 @@
           return getMuted();
         },
         set: function( aValue ){
-          setMuted( !!aValue );
+          setMuted( isAttributeSet( aValue ) );
         }
       },
 
