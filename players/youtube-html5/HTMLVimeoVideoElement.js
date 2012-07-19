@@ -119,7 +119,8 @@
       controls: true,
       loop: false,
       poster: EMPTY_STRING,
-      volume: 1,
+      // .77 eh? Whatever, vimeo default...
+      volume: 0.77,
       // Vimeo has no concept of muted, store volume values
       // such that muted===0 is unmuted, and muted>0 is muted.
       muted: 0,
@@ -169,6 +170,8 @@
 
       // TODO: do I need this here???
       player.getDuration();
+
+      player.getVolume();
 
       // TODO: should I do this?  jbuck did...
       dispatchEvent( "loadstart" );
@@ -403,6 +406,7 @@ console.log('onCurrentTime, seekTarget > -1', seekTarget, currentTime);
           updateDuration( parseFloat( data.value ) );
           break;
         case "getVolume":
+console.log("volume=",data.value);
           onVolume( parseFloat( data.value ) );
           break;
       }
@@ -444,6 +448,11 @@ console.log('pause callback');
         case "seek":
           onCurrentTime( parseFloat( data.data.seconds ) );
           onSeeked();
+          // Deal with Vimeo playing when paused after a seek
+          if( impl.paused ){
+            self.pause();
+          }
+
 //          impl.currentTime = parseFloat( data.data.seconds );
 //          impl.seeking = false;
 //          impl.ended = false;
@@ -523,24 +532,29 @@ console.log('pause callback');
     }
 
     function onVolume( aValue ){
-      impl.volume = aValue;
+      if( impl.volume !== aValue ){
+        impl.volume = aValue;
+        dispatchEvent( "volumechange" );
+      }
     }
 
     function setVolume( aValue ){
       if( !playerReady ){
         impl.volume = aValue;
+        dispatchEvent( "volumechange" );
         addPlayerReadyCallback( function(){
           setVolume( impl.volume );
         });
         return;
       }
-
+console.log('setVolume', aValue);
       player.setVolume( aValue );
-      dispatchEvent( "volumechange" );
+      player.getVolume();
     }
 
     function getVolume(){
       // If we're muted, the volume is cached on impl.muted.
+console.log('getVolume', impl.muted, impl.volume);
       return impl.muted > 0 ? impl.muted : impl.volume;
     }
 
